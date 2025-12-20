@@ -1,0 +1,20 @@
+requirements:
+- read docs/repo-structure.md for more information
+- read all files before suggesting changes
+- I wanna build a cloud management system called mcloud
+- use Go programming language
+- use SQLite as the database
+- use HTTP for communication between components
+- use YAML for configuration files
+- read repository before suggesting changes: 
+  1. https://github.com/canonical/microcloud 
+  2. https://github.com/canonical/lxd
+  3. https://github.com/canonical/microceph
+  4. https://github.com/canonical/microcluster
+  5. https://github.com/canonical/microovn
+
+feature "mcloud init":
+- run "mcloud init" on terminal, it will call to mcloudd server http to setup initial configuration
+- my purpose is to create a LXD cluster with Ceph and OVN networking
+- store cluster information in SQLite database
+- create static configuration for LXD, Ceph, and OVN

@@ -1,0 +1,9 @@
+manager:
+  host: '127.0.0.1'
+  port: 9028
+
+agent:
+  manager_url: 'http://127.0.0.1:9028'
+
+store:
+  db_path: 'mcloud.db'
