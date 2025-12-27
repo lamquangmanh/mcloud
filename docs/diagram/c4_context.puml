@@ -1,0 +1,26 @@
+@startuml
+
+' --- C4 PlantUML Libraries ---
+!includeurl https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Context.puml
+
+' --- Title ---
+title Context Diagram for MCloud system (Level 1)
+
+Person(user, "User", "End user who interacts with the MCloud System")
+
+System(mcloud, "MCloud System", "LXD management, MicroOVN management, Kubernetes Management, MicroCeph management, Cluster management, Node management, Image management, Network management, Storage management")
+
+System_Ext(lxd, "LXD System", "LXD management")
+System_Ext(microovn, "MicroOVN System", "Network management")
+System_Ext(microceph, "MicroCeph System", "Storage management")
+System_Ext(microk8s, "MicroK8s System", "Kubernetes management")
+System_Ext(dqlite, "Dqlite System", "Distributed SQLite management")
+
+Rel(user, mcloud, "Interact with")
+Rel(mcloud, lxd, "Manage LXD containers using")
+Rel(mcloud, microovn, "Manage network using")
+Rel(mcloud, microceph, "Manage storage using")
+Rel(mcloud, microk8s, "Manage Kubernetes using")
+Rel(mcloud, dqlite, "Manage distributed database using only for MCloud")
+
+@enduml

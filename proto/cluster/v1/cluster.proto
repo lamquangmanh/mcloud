@@ -1,0 +1,53 @@
+syntax = "proto3";
+
+package mcloud.cluster.v1;
+
+option go_package = "mcloud/pkg/api/clusterpb;clusterpb";
+
+message JoinTokenRequest {
+  string node_name = 1;  
+}
+
+message JoinTokenResponse {
+  string core_https_address = 1;
+  string cluster_server_name = 2;
+  string cluster_address = 3;
+  string cluster_certificate = 4;
+  string cluster_token = 5;
+}
+
+message JoinRequest {
+  string node_name = 1;
+  string join_token = 2;
+  string advertise_address = 3;
+}
+
+message JoinResponse {
+  bool success = 1;
+  string message = 2;
+}
+
+message HealthRequest {
+  string node_name = 1;
+}
+
+message HealthResponse {
+  string status = 1;
+}
+
+message LeaveRequest {
+  string node_name = 1;
+  string node_address = 2;
+}
+
+message LeaveResponse {
+  bool success = 1;
+  string message = 2;
+}
+
+service ClusterService {
+  rpc GetJoinToken(JoinTokenRequest) returns (JoinTokenResponse);
+  rpc JoinCluster(JoinRequest) returns (JoinResponse);
+  rpc LeaveCluster(LeaveRequest) returns (LeaveResponse);
+  rpc Health(HealthRequest) returns (HealthResponse);
+}

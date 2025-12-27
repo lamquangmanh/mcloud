@@ -1,0 +1,13 @@
+config:
+  core.https_address: 10.0.0.11:8443
+
+cluster:
+  enabled: true
+  server_name: mcloud-node-2
+  cluster_address: 10.0.0.10:8443
+  cluster_certificate: |
+    -----BEGIN CERTIFICATE-----
+    MIIC...
+    -----END CERTIFICATE-----
+  cluster_token: |
+    eyJzZXJ2ZXJfbmFtZSI6Im1jbG91ZC1ub2RlLTIiLCJzZWNyZXQiOiJ...

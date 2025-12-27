@@ -16,9 +16,9 @@ type Config struct {
 		ManagerURL string `yaml:"manager_url"`
 	} `yaml:"agent"`
 
-	Store struct {
+	Database struct {
 		DBPath string `yaml:"db_path"`
-	} `yaml:"store"`
+	} `yaml:"database"`
 }
 
 func Load() (*Config, error) {

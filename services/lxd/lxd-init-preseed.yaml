@@ -1,0 +1,13 @@
+config:
+  core.https_address: 10.0.0.10:8443
+
+networks: []
+storage_pools: []
+profiles: []
+
+cluster:
+  enabled: true
+  server_name: mcloud-node-1
+  cluster_address: 10.0.0.10:8443
+  cluster_certificate: ''
+  cluster_password: ''

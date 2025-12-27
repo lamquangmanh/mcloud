@@ -4,13 +4,19 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"time"
+
+	"github.com/google/uuid"
+
 	"mcloud/internal/auth"
 	"mcloud/internal/cert"
 	"mcloud/internal/database"
 	"mcloud/internal/lxd"
-	"time"
+	"mcloud/pkg/commander"
+)
 
-	"github.com/google/uuid"
+const (
+	Disk = "/dev/sdb" // disk used for microceph
 )
 
 type Service struct {
@@ -38,10 +44,45 @@ func NewService(db *sql.DB) *Service {
 	}
 }
 
+func validateInitRequest(req *InitRequest) error {
+	// Basic validation
+	if req.Name == "" {
+		return errors.New("cluster name is required")
+	}
+	if req.AdvertiseAddress == "" {
+		return errors.New("advertise address is required")
+	}
+
+	// check snap lxd, microceph, microovn installed
+	cmds := []string{
+		"lxd",
+		"lxc",
+		"microceph",
+		"microovn",
+	}
+	for _, c := range cmds {
+		if err := commander.CheckCommandExists(c); err != nil {
+			return err
+		}
+	}
+
+	// check port 8443 available
+	if err := commander.CheckPortAvailable(8443); err != nil {
+		return err
+	}
+
+	// check disk exists
+	if err := commander.CheckDiskExists(Disk); err != nil {
+		return err
+	}
+	
+	return nil
+}
+
 func (s *Service) InitCluster(ctx context.Context, req *InitRequest) (*InitResult, error) {
 	// 1. Validate
-	if req.Name == "" || req.AdvertiseAddress == "" {
-		return nil, errors.New("invalid request: name and advertise_address are required")
+	if err := validateInitRequest(req); err != nil {
+		return nil, err
 	}
 
 	// 2. Check cluster exists (fast-fail)
@@ -58,7 +99,10 @@ func (s *Service) InitCluster(ctx context.Context, req *InitRequest) (*InitResul
 	clusterID := uuid.NewString()
 
 	// Generate CA certificate
-	caCertPEM, caKeyPEM := cert.GenerateCA()
+	caCertPEM, caKeyPEM, err := cert.GenerateCA()
+	if err != nil {
+		return nil, err
+	}
 
 	// Generate bootstrap token
 	token := auth.GenerateJoinToken(clusterID)

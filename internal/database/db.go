@@ -125,7 +125,7 @@ func Connect() (*sql.DB, error) {
 		return nil, err
 	}
 
-	dbPath := cfg.Store.DBPath
+	dbPath := cfg.Database.DBPath
 	dsn := fmt.Sprintf("%s?_pragma=busy_timeout=5000&_pragma=journal_mode=WAL&_pragma=synchronous=NORMAL", dbPath)
 	db, err := sql.Open("sqlite", dsn)
 	if err != nil {
