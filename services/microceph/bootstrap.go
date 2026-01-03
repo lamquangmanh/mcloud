@@ -1,12 +1,12 @@
 package microceph
 
 import (
-	"fmt"
 	"mcloud/pkg/commander"
+	"mcloud/pkg/logger"
 )
 
 type BootstrapConfig struct {
-	disk string // example: /dev/sdb
+	Disk string // example: /dev/sdb
 }
 
 // Bootstrap initializes the microceph service with the given configuration
@@ -14,16 +14,16 @@ func Bootstrap(cfg BootstrapConfig) error {
 	// Initialize microceph
 	if _, err := commander.ExecCommand("microceph", "init"); 
 	err != nil {
-		fmt.Errorf("failed to init microceph: %w", err)
+		logger.Error("failed to init microceph: %v", err)
 		return err
 	}
 
 	// Add disk to microceph
 	if _, err := commander.ExecCommand(
-		"microceph", "disk", "add", cfg.disk,
+		"microceph", "disk", "add", cfg.Disk,
 	); 
 	err != nil {
-		fmt.Errorf("failed to add disk: %w", err)
+		logger.Error("failed to add disk: %v", err)
 		return err
 	}
 

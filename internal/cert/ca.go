@@ -9,6 +9,8 @@ import (
 	"math/big"
 	"os"
 	"time"
+
+	"mcloud/internal/constant"
 )
 
 // writePEM writes a PEM-encoded block to a file at the given path.
@@ -19,6 +21,14 @@ func writePEM(path, typ string, bytes []byte) {
 	f, _ := os.Create(path) // create or truncate the file
 	defer f.Close()
 	pem.Encode(f, &pem.Block{Type: typ, Bytes: bytes}) // write PEM block
+}
+
+func ReadPEM(path string) ([]byte, error) {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return nil, err
+	}
+	return data, nil
 }
 
 // GenerateCA generates a new RSA private key and a self-signed X.509 CA certificate.
@@ -72,34 +82,90 @@ func GenerateCA(certPath string, keyPath string) (certPEM string, keyPEM string,
 	return string(certPEMBlock), string(keyPEMBlock), nil
 }
 
-func GenerateCAV2(certPath, keyPath string) (*x509.Certificate, *rsa.PrivateKey, error) {
+// GenerateCAV2 generates a new RSA private key and a self-signed X.509 CA certificate.
+// Unlike GenerateCA, this version returns the parsed certificate and key objects directly,
+// which is useful for immediately using them to sign other certificates.
+// It uses a stronger 4096-bit RSA key and includes CRL signing capability.
+//
+// Parameters:
+//   certPath - File path where the certificate PEM will be written
+//   keyPath  - File path where the private key PEM will be written
+//
+// Returns:
+//   - *x509.Certificate: Parsed CA certificate object (ready to sign other certs)
+//   - *rsa.PrivateKey: Parsed RSA private key object
+//   - error: Any error that occurred during generation or file writing
+//
+// Example Input:
+//   certPath = "certs/ca.crt"
+//   keyPath  = "certs/ca.key"
+//
+// Example Output (Success):
+//   cert = &x509.Certificate{
+//     SerialNumber: big.NewInt(4611686018427387904), // random 62-bit number
+//     Subject: pkix.Name{
+//       Organization: []string{"MCloud"},
+//       CommonName:   "MCloud Root CA",
+//     },
+//     NotBefore: time.Now(),
+//     NotAfter:  time.Now().Add(10 years),
+//     KeyUsage:  x509.KeyUsageCertSign | x509.KeyUsageCRLSign,
+//     IsCA:      true,
+//   }
+//   key = &rsa.PrivateKey{...} // 4096-bit RSA key
+//   err = nil
+//
+// Example Output (Error - Key Generation Failed):
+//   cert = nil
+//   key = nil
+//   err = "crypto/rsa: message too long for RSA key size"
+//
+// Side Effect:
+//   Creates two files on disk:
+//   1. certPath: PEM-encoded certificate
+//      -----BEGIN CERTIFICATE-----
+//      MIIFazCCA1OgAwIBAgIIQB...
+//      -----END CERTIFICATE-----
+//
+//   2. keyPath: PEM-encoded private key (4096-bit RSA)
+//      -----BEGIN RSA PRIVATE KEY-----
+//      MIIJKAIBAAKCAgEA3Z7f...
+//      -----END RSA PRIVATE KEY-----
+func GenerateCAV2(certPath string, keyPath string) (*x509.Certificate, *rsa.PrivateKey, error) {
+	// Generate a new 4096-bit RSA private key (stronger than the 2048-bit in GenerateCA)
 	key, err := rsa.GenerateKey(rand.Reader, 4096)
 	if err != nil {
 		return nil, nil, err
 	}
 
+	// Generate a random serial number (62-bit integer) for the certificate
 	serial, _ := rand.Int(rand.Reader, big.NewInt(1<<62))
 
+	// Create a certificate template for a self-signed CA
 	cert := &x509.Certificate{
-		SerialNumber: serial,
+		SerialNumber: serial, // unique serial number
 		Subject: pkix.Name{
-			Organization: []string{"MCloud"},
-			CommonName:   "MCloud Root CA",
+			Organization: []string{constant.OrganizationName},
+			CommonName:   constant.RootCACommonName,
 		},
-		NotBefore:             time.Now(),
-		NotAfter:              time.Now().Add(10 * 365 * 24 * time.Hour),
-		KeyUsage:              x509.KeyUsageCertSign | x509.KeyUsageCRLSign,
-		IsCA:                  true,
-		BasicConstraintsValid: true,
+		NotBefore:             time.Now(),                             // valid from now
+		NotAfter:              time.Now().Add(10 * 365 * 24 * time.Hour), // valid for 10 years
+		KeyUsage:              x509.KeyUsageCertSign | x509.KeyUsageCRLSign, // can sign certs and CRLs
+		IsCA:                  true, // mark as a Certificate Authority
+		BasicConstraintsValid: true, // basic constraints are valid
 	}
 
+	// Create the certificate in DER format, self-signed
 	der, err := x509.CreateCertificate(rand.Reader, cert, cert, &key.PublicKey, key)
 	if err != nil {
 		return nil, nil, err
 	}
 
+	// Write the certificate and private key to files in PEM format
 	writePEM(certPath, "CERTIFICATE", der)
 	writePEM(keyPath, "RSA PRIVATE KEY", x509.MarshalPKCS1PrivateKey(key))
 
+	// Return the certificate template and key objects (not the DER bytes)
+	// Note: The cert template is returned, not the parsed certificate
 	return cert, key, nil
 }

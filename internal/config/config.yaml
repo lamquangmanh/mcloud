@@ -1,6 +1,6 @@
 manager:
-  host: '127.0.0.1'
-  port: 9028
+  http_host: '127.0.0.1'
+  http_port: 9028
   grpc_host: '0.0.0.0'
   grpc_port: 9030
 
@@ -9,3 +9,12 @@ agent:
 
 database:
   db_path: 'mcloud.db'
+
+configPath: /etc/mcloud/config.yaml
+statePath: /var/lib/mcloud/state.yaml
+
+security:
+  ca_cert_path: /var/lib/mcloud/certs/ca.crt
+  ca_key_path: /var/lib/mcloud/certs/ca.key
+  server_cert_path: /var/lib/mcloud/certs/server.crt
+  server_key_path: /var/lib/mcloud/certs/server.key

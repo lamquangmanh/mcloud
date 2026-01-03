@@ -1,8 +1,15 @@
 package microovn
 
-import "mcloud/pkg/commander"
+import (
+	"mcloud/pkg/commander"
+	"mcloud/pkg/logger"
+)
 
-func Bootstrap() (string, error) {
-	output, err := commander.ExecCommand("microovn", "init")
-	return output, err
+func Bootstrap() error {
+	_, err := commander.ExecCommand("microovn", "init")
+	if err != nil {
+		logger.Error("failed to init microovn: %v", err)
+	}
+	
+	return nil
 }

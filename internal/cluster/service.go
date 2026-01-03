@@ -1,18 +1,12 @@
 package cluster
 
 import (
-	"context"
 	"database/sql"
 	"errors"
-	"time"
 
-	"github.com/google/uuid"
-
-	"mcloud/internal/auth"
-	"mcloud/internal/cert"
 	"mcloud/internal/database"
-	"mcloud/internal/lxd"
 	"mcloud/pkg/commander"
+	// "mcloud/services/lxd"
 )
 
 const (
@@ -21,7 +15,7 @@ const (
 
 type Service struct {
 	db        *sql.DB
-	lxdClient lxd.Client
+	// lxdClient lxd.Client
 }
 
 type InitRequest struct {
@@ -37,10 +31,10 @@ type InitResult struct {
 
 func NewService(db *sql.DB) *Service {
 	// Create LXD client
-	lxdClient := lxd.NewClient()
+	// lxdClient := lxd.NewClient()
 	return &Service{
 		db:        db,
-		lxdClient: lxdClient,
+		// lxdClient: lxdClient,
 	}
 }
 
@@ -79,132 +73,132 @@ func validateInitRequest(req *InitRequest) error {
 	return nil
 }
 
-func (s *Service) InitCluster(ctx context.Context, req *InitRequest) (*InitResult, error) {
-	// 1. Validate
-	if err := validateInitRequest(req); err != nil {
-		return nil, err
-	}
+// func (s *Service) InitCluster(ctx context.Context, req *InitRequest) (*InitResult, error) {
+// 	// 1. Validate
+// 	if err := validateInitRequest(req); err != nil {
+// 		return nil, err
+// 	}
 
-	// 2. Check cluster exists (fast-fail)
-	clusterRepo := database.NewClusterRepository(s.db)
-	count, err := clusterRepo.Count(ctx)
-	if err != nil {
-		return nil, err
-	}
-	if count > 0 {
-		return nil, errors.New("cluster already initialized")
-	}
+// 	// 2. Check cluster exists (fast-fail)
+// 	clusterRepo := database.NewClusterRepository(s.db)
+// 	count, err := clusterRepo.Count(ctx)
+// 	if err != nil {
+// 		return nil, err
+// 	}
+// 	if count > 0 {
+// 		return nil, errors.New("cluster already initialized")
+// 	}
 
-	// 3. Generate data (NO DB)
-	clusterID := uuid.NewString()
+// 	// 3. Generate data (NO DB)
+// 	clusterID := uuid.NewString()
 
-	// Generate CA certificate
-	caCertPEM, caKeyPEM, err := cert.GenerateCA()
-	if err != nil {
-		return nil, err
-	}
+// 	// Generate CA certificate
+// 	caCertPEM, caKeyPEM, err := cert.GenerateCA("", "MCloud Cluster CA")
+// 	if err != nil {
+// 		return nil, err
+// 	}
 
-	// Generate bootstrap token
-	token := auth.GenerateJoinToken(clusterID)
-	tokenExpiry := time.Now().Add(24 * time.Hour) // Token valid for 24 hours
+// 	// Generate bootstrap token
+// 	token := auth.GenerateJoinToken(clusterID)
+// 	tokenExpiry := time.Now().Add(24 * time.Hour) // Token valid for 24 hours
 
-	// 4. LXD INIT (SIDE EFFECT)
-	nodeInfo, err := s.lxdClient.InitCluster(req.AdvertiseAddress)
-	if err != nil {
-		return nil, err
-	}
+// 	// 4. LXD INIT (SIDE EFFECT)
+// 	// nodeInfo, err := s.lxdClient.InitCluster(req.AdvertiseAddress)
+// 	// if err != nil {
+// 	// 	return nil, err
+// 	// }
 
-	var result *InitResult
+// 	var result *InitResult
 
-	// 5. Persist state (TRANSACTION ONLY)
-	err = database.WithTx(ctx, s.db, func(tx *sql.Tx) error {
-		clusterRepo := database.NewClusterRepositoryTx(tx)
-		nodeRepo := database.NewNodeRepositoryTx(tx)
-		caRepo := database.NewCertificateAuthorityRepositoryTx(tx)
-		tokenRepo := database.NewBootstrapTokenRepositoryTx(tx)
+// 	// 5. Persist state (TRANSACTION ONLY)
+// 	err = database.WithTx(ctx, s.db, func(tx *sql.Tx) error {
+// 		clusterRepo := database.NewClusterRepositoryTx(tx)
+// 		nodeRepo := database.NewNodeRepositoryTx(tx)
+// 		caRepo := database.NewCertificateAuthorityRepositoryTx(tx)
+// 		tokenRepo := database.NewBootstrapTokenRepositoryTx(tx)
 
-		cluster := &database.Cluster{
-			ID:    clusterID,
-			Name:  req.Name,
-			State: "active",
-		}
+// 		cluster := &database.Cluster{
+// 			ID:    clusterID,
+// 			Name:  req.Name,
+// 			State: "active",
+// 		}
 
-		if err := clusterRepo.Create(ctx, cluster); err != nil {
-			return err
-		}
+// 		if err := clusterRepo.Create(ctx, cluster); err != nil {
+// 			return err
+// 		}
 
-		node := &database.Node{
-			ID:        uuid.NewString(),
-			ClusterID: clusterID,
-			Hostname:  nodeInfo.Hostname,
-			IP:        nodeInfo.IP,
-			Role:      "leader",
-			Status:    "online",
-		}
+// 		node := &database.Node{
+// 			ID:        uuid.NewString(),
+// 			ClusterID: clusterID,
+// 			Hostname:  nodeInfo.Hostname,
+// 			IP:        nodeInfo.IP,
+// 			Role:      "leader",
+// 			Status:    "online",
+// 		}
 
-		if err := nodeRepo.Create(ctx, node); err != nil {
-			return err
-		}
+// 		if err := nodeRepo.Create(ctx, node); err != nil {
+// 			return err
+// 		}
 
-		ca := &database.CertificateAuthority{
-			ID:        uuid.NewString(),
-			ClusterID: clusterID,
-			CertPEM:   caCertPEM,
-			KeyPEM:    caKeyPEM,
-		}
+// 		ca := &database.CertificateAuthority{
+// 			ID:        uuid.NewString(),
+// 			ClusterID: clusterID,
+// 			CertPEM:   caCertPEM,
+// 			KeyPEM:    caKeyPEM,
+// 		}
 
-		if err := caRepo.Create(ctx, ca); err != nil {
-			return err
-		}
+// 		if err := caRepo.Create(ctx, ca); err != nil {
+// 			return err
+// 		}
 
-		bootstrapToken := &database.BootstrapToken{
-			Token:     token,
-			ClusterID: clusterID,
-			ExpiresAt: tokenExpiry,
-			Used:      false,
-		}
+// 		bootstrapToken := &database.BootstrapToken{
+// 			Token:     token,
+// 			ClusterID: clusterID,
+// 			ExpiresAt: tokenExpiry,
+// 			Used:      false,
+// 		}
 
-		if err := tokenRepo.Create(ctx, bootstrapToken); err != nil {
-			return err
-		}
+// 		if err := tokenRepo.Create(ctx, bootstrapToken); err != nil {
+// 			return err
+// 		}
 
-		// Store LXD, Ceph, and OVN configurations
-		kvRepo := database.NewKVStoreRepositoryTx(tx)
+// 		// Store LXD, Ceph, and OVN configurations
+// 		kvRepo := database.NewKVStoreRepositoryTx(tx)
 		
-		// Store LXD cluster configuration
-		if err := kvRepo.Set(ctx, "lxd.cluster.name", req.Name); err != nil {
-			return err
-		}
-		if err := kvRepo.Set(ctx, "lxd.cluster.address", req.AdvertiseAddress); err != nil {
-			return err
-		}
+// 		// Store LXD cluster configuration
+// 		if err := kvRepo.Set(ctx, "lxd.cluster.name", req.Name); err != nil {
+// 			return err
+// 		}
+// 		if err := kvRepo.Set(ctx, "lxd.cluster.address", req.AdvertiseAddress); err != nil {
+// 			return err
+// 		}
 		
-		// Store Ceph configuration placeholders
-		if err := kvRepo.Set(ctx, "ceph.enabled", "true"); err != nil {
-			return err
-		}
-		if err := kvRepo.Set(ctx, "ceph.cluster.name", req.Name+"-ceph"); err != nil {
-			return err
-		}
+// 		// Store Ceph configuration placeholders
+// 		if err := kvRepo.Set(ctx, "ceph.enabled", "true"); err != nil {
+// 			return err
+// 		}
+// 		if err := kvRepo.Set(ctx, "ceph.cluster.name", req.Name+"-ceph"); err != nil {
+// 			return err
+// 		}
 		
-		// Store OVN configuration placeholders
-		if err := kvRepo.Set(ctx, "ovn.enabled", "true"); err != nil {
-			return err
-		}
-		if err := kvRepo.Set(ctx, "ovn.network.name", req.Name+"-ovn"); err != nil {
-			return err
-		}
+// 		// Store OVN configuration placeholders
+// 		if err := kvRepo.Set(ctx, "ovn.enabled", "true"); err != nil {
+// 			return err
+// 		}
+// 		if err := kvRepo.Set(ctx, "ovn.network.name", req.Name+"-ovn"); err != nil {
+// 			return err
+// 		}
 
-		result = &InitResult{
-			ClusterID: clusterID,
-			Leader:    node,
-			Token:     token,
-		}
-		return nil
-	})
+// 		result = &InitResult{
+// 			ClusterID: clusterID,
+// 			Leader:    node,
+// 			Token:     token,
+// 		}
+// 		return nil
+// 	})
 
-	return result, err
-}
+// 	return result, err
+// }
 
 // func (s *Service) InitCluster(ctx context.Context, req *InitRequest) (*InitResult, error) {
 // 	var result *InitResult

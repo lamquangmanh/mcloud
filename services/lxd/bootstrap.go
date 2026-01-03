@@ -22,8 +22,8 @@ type ClusterConfigYaml struct {
 }
 
 type BootstrapConfig struct {
-	clusterName string
-	address     string // IP:8443
+	ClusterName string
+	Address     string // only IP: 192.168.1.100 (not include port)
 }
 
 // generateInitConfig creates the LXD init preseed configuration for bootstrapping a cluster
@@ -54,20 +54,20 @@ func RunInit(initCfg *InitConfigYaml) error {
 }
 
 // Bootstrap initializes a new LXD cluster with the given configuration
-func Bootstrap(cfg BootstrapConfig) (string, error) {
+func Bootstrap(cfg BootstrapConfig) error {
 	// generate init config
-	data, err := generateInitConfig(cfg.clusterName, cfg.address)
+	data, err := generateInitConfig(cfg.ClusterName, cfg.Address)
 	if err != nil {
-		return "", fmt.Errorf("failed to generate init config: %w", err)
+		return fmt.Errorf("failed to generate init config: %w", err)
 	}
 
-	// run lxd init with preseed
+	// run lxd init with "preseed"
 	initErr := RunInit(data)
 	if initErr != nil {
-		return "", fmt.Errorf("failed to bootstrap LXD cluster: %w", initErr)
+		return fmt.Errorf("failed to bootstrap LXD cluster: %w", initErr)
 	}
 
-	return "LXD cluster bootstrapped successfully", nil
+	return nil
 }
 
 

@@ -1,0 +1,17 @@
+# /var/lib/mcloud/state.yaml
+version: 0.1.0
+
+node:
+  id: 8f1d9a8c-9d43-4e3e-8a1b-3b1b1a9e6b7d
+  hostname: mcloud-node-1
+  primary_ip: 192.168.1.10
+  role: leader # leader | follower
+  initialized_at: 2025-12-29T08:10:00Z
+
+cluster:
+  id: c12f4e21-0c5c-4e6b-bf68-b5adab83d6c1
+  name: my-cluster
+  advertise_addr: 192.168.1.10:7443
+
+flags:
+  initialized: true
